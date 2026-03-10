@@ -138,8 +138,9 @@ python manage.py migrate --noinput
 python manage.py seed_data
 python manage.py collectstatic --noinput
 
+mkdir -p "$APP_DIR/backend/media" "$APP_DIR/backend/staticfiles"
 chown -R $APP_USER:$APP_USER "$APP_DIR/backend/media"
-chown -R $APP_USER:$APP_USER "$APP_DIR/backend/static"
+chown -R $APP_USER:$APP_USER "$APP_DIR/backend/staticfiles"
 
 # =============================================================================
 # 8. Фронтенд
@@ -225,7 +226,7 @@ server {
 
     # Статика Django
     location /static/ {
-        alias $APP_DIR/backend/static/;
+        alias $APP_DIR/backend/staticfiles/;
         expires 30d;
         add_header Cache-Control "public, immutable";
     }
