@@ -258,7 +258,7 @@ export default function AnalyticsPage() {
                   <Tooltip
                     contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: 8, color: '#f1f5f9' }}
                     labelFormatter={v => `Дата: ${v}`}
-                    formatter={(value: number) => [`${fmt(Math.round(value))} с.`, 'Выручка']}
+                    formatter={(value: number | undefined) => [`${fmt(Math.round(value ?? 0))} с.`, 'Выручка']}
                   />
                   <Area type="monotone" dataKey="revenue" stroke="#0066FF" strokeWidth={2} fill="url(#revGrad)" />
                 </AreaChart>

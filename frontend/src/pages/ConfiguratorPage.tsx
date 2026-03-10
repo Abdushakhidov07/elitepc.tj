@@ -36,7 +36,7 @@ export default function ConfiguratorPage() {
   const [presets, setPresets] = useState<PCConfiguration[]>([]);
   const [showPresets, setShowPresets] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const addItem = useCartStore(s => s.addItem);
 
   useEffect(() => {

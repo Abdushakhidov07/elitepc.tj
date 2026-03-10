@@ -161,7 +161,7 @@ function AdminDashboard() {
               <Tooltip
                 contentStyle={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#1e293b' }}
                 labelFormatter={v => `Дата: ${v}`}
-                formatter={(value: number) => [`${value.toLocaleString()} сом.`, 'Выручка']}
+                formatter={(value: number | undefined) => [`${(value ?? 0).toLocaleString()} сом.`, 'Выручка']}
               />
               <Area type="monotone" dataKey="revenue" stroke="#0066FF" strokeWidth={2} fill="url(#colorRevenue)" />
             </AreaChart>
