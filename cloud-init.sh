@@ -32,7 +32,7 @@ apt-get upgrade -y -qq
 
 apt-get install -y -qq \
     git curl wget gnupg ca-certificates \
-    python3.11 python3.11-venv python3.11-dev python3-pip \
+    python3 python3-venv python3-dev python3-pip \
     postgresql postgresql-contrib \
     nginx \
     certbot python3-certbot-nginx \
@@ -42,7 +42,7 @@ apt-get install -y -qq \
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y -qq nodejs
 
-echo "  Python: $(python3.11 --version)"
+echo "  Python: $(python3 --version)"
 echo "  Node:   $(node --version)"
 echo "  npm:    $(npm --version)"
 
@@ -77,8 +77,8 @@ chown -R $APP_USER:$APP_USER "$APP_DIR"
 # =============================================================================
 echo "[5/9] Устанавливаем Python зависимости..."
 cd "$APP_DIR"
-python3.11 -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv
+. .venv/bin/activate
 pip install --upgrade pip --quiet
 pip install -r backend/requirements.txt --quiet
 
@@ -132,7 +132,7 @@ export DJANGO_SETTINGS_MODULE=config.settings.local
 export PYTHONPATH="$APP_DIR/backend"
 
 # Загружаем .env вручную
-set -a; source "$APP_DIR/.env"; set +a
+set -a; . "$APP_DIR/.env"; set +a
 
 python manage.py migrate --noinput
 python manage.py seed_data
