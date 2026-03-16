@@ -356,7 +356,14 @@ cat backup_FILE.sql | docker compose exec -T db psql -U postgres elitepc
    TELEGRAM_CHANNEL_ID=@elitepc_orders
    ```
 5. Перезапустите: `docker compose restart web celery`
-6. В панели управления `/admin/telegram` — одобрите чат
+6. После настройки домена и HTTPS зарегистрируйте webhook:
+   ```bash
+   cd /var/www/elitepc
+   chmod +x setup-telegram.sh
+   ./setup-telegram.sh https://elitepc.tj
+   ```
+7. Откройте бота в Telegram и отправьте `/start`
+8. В панели управления `/admin/telegram` — одобрите чат
 
 ---
 
