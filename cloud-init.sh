@@ -172,17 +172,18 @@ WorkingDirectory=$APP_DIR/backend
 EnvironmentFile=$APP_DIR/.env
 Environment="DJANGO_SETTINGS_MODULE=config.settings.local"
 Environment="PYTHONPATH=$APP_DIR/backend"
-ExecStart=$APP_DIR/.venv/bin/gunicorn \\
-    --workers 3 \\
-    --bind unix:/run/elitepc.sock \\
-    --access-logfile /var/log/elitepc-access.log \\
-    --error-logfile /var/log/elitepc-error.log \\
-    config.wsgi:application
+RuntimeDirectory=elitepc
+RuntimeDirectoryMode=0755
+ExecStart=$APP_DIR/.venv/bin/gunicorn --workers 3 --bind unix:/run/elitepc/gunicorn.sock --access-logfile /var/log/elitepc-access.log --error-logfile /var/log/elitepc-error.log config.wsgi:application
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+touch /var/log/elitepc-access.log /var/log/elitepc-error.log
+chown $APP_USER:$APP_USER /var/log/elitepc-access.log /var/log/elitepc-error.log
+chown -R $APP_USER:$APP_USER "$APP_DIR"
 
 systemctl daemon-reload
 systemctl enable elitepc
@@ -208,7 +209,7 @@ server {
 
     # API → Gunicorn
     location /api/ {
-        proxy_pass http://unix:/run/elitepc.sock;
+        proxy_pass http://unix:/run/elitepc/gunicorn.sock;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -216,8 +217,17 @@ server {
     }
 
     # Django Admin
+    location /admin/ {
+        proxy_pass http://unix:/run/elitepc/gunicorn.sock;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+
+    # Backward-compatible alias for admin URL
     location /django-admin/ {
-        proxy_pass http://unix:/run/elitepc.sock;
+        proxy_pass http://unix:/run/elitepc/gunicorn.sock;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
