@@ -2,6 +2,7 @@ import datetime
 import os
 
 from django.core.cache import cache
+from django.core.paginator import Paginator
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
@@ -49,6 +50,36 @@ def validate_uploaded_image(file):
     ext = os.path.splitext(file.name)[1].lower()
     if ext not in _ALLOWED_IMAGE_EXTS:
         raise DRFValidationError(f'Недопустимое расширение файла: {ext}. Разрешены .jpg .jpeg .png .webp .gif')
+
+
+def paginate_queryset(request, queryset, serializer_class, *, default_page_size=25, max_page_size=100, context=None):
+    try:
+        page = max(int(request.query_params.get('page', 1)), 1)
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        page_size = int(request.query_params.get('page_size', default_page_size))
+    except (TypeError, ValueError):
+        page_size = default_page_size
+    page_size = max(1, min(page_size, max_page_size))
+
+    paginator = Paginator(queryset, page_size)
+    page_obj = paginator.get_page(page)
+    serializer = serializer_class(
+        page_obj.object_list,
+        many=True,
+        context=context or {},
+    )
+    return Response({
+        'count': paginator.count,
+        'page': page_obj.number,
+        'page_size': page_size,
+        'total_pages': paginator.num_pages,
+        'next': page_obj.next_page_number() if page_obj.has_next() else None,
+        'previous': page_obj.previous_page_number() if page_obj.has_previous() else None,
+        'results': serializer.data,
+    })
 
 from apps.analytics.serializers import (
     AdminBrandListSerializer,
@@ -457,8 +488,12 @@ class AdminOrderListView(APIView):
                 Q(customer_email__icontains=search)
             )
 
-        serializer = AdminOrderListSerializer(orders[:500], many=True)
-        return Response(serializer.data)
+        return paginate_queryset(
+            request,
+            orders,
+            AdminOrderListSerializer,
+            default_page_size=25,
+        )
 
 
 class AdminOrderDetailView(APIView):
@@ -503,8 +538,13 @@ class AdminProductListView(APIView):
             slugs = [s.strip() for s in category_slug.split(',') if s.strip()]
             products = products.filter(category__slug__in=slugs)
 
-        serializer = AdminProductListSerializer(products[:1000], many=True, context={'request': request})
-        return Response(serializer.data)
+        return paginate_queryset(
+            request,
+            products,
+            AdminProductListSerializer,
+            default_page_size=25,
+            context={'request': request},
+        )
 
 
 class AdminProductUpdateView(APIView):
@@ -604,7 +644,15 @@ class AdminCategoryListCreateView(APIView):
     def get(self, request):
         from apps.products.models import Category
 
-        categories = Category.objects.all().order_by('tree_id', 'lft')
+        categories = (
+            Category.objects
+            .select_related('parent')
+            .annotate(
+                children_count=Count('children', distinct=True),
+                products_count=Count('products', distinct=True),
+            )
+            .order_by('tree_id', 'lft')
+        )
         serializer = AdminCategorySerializer(categories, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -891,9 +939,13 @@ class AdminPresetListCreateView(APIView):
     def get(self, request):
         from apps.configurator.models import PCConfiguration
 
-        presets = PCConfiguration.objects.filter(
-            is_preset=True
-        ).prefetch_related('items__product').order_by('-created_at')
+        presets = (
+            PCConfiguration.objects
+            .filter(is_preset=True)
+            .prefetch_related('items__product')
+            .annotate(items_count=Count('items', distinct=True))
+            .order_by('-created_at')
+        )
         serializer = AdminPresetSerializer(presets, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -919,7 +971,9 @@ class AdminPresetDetailView(APIView):
         from apps.configurator.models import PCConfiguration
 
         preset = get_object_or_404(
-            PCConfiguration.objects.prefetch_related('items__product'),
+            PCConfiguration.objects.prefetch_related('items__product').annotate(
+                items_count=Count('items', distinct=True),
+            ),
             pk=pk, is_preset=True,
         )
         return Response(AdminPresetSerializer(preset, context={'request': request}).data)

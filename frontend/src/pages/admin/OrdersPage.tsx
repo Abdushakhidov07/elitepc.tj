@@ -299,32 +299,53 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
-  const fetchOrders = () => {
+  const fetchOrders = (pageToLoad = page) => {
     setLoading(true);
-    const params: { status?: string; search?: string } = {};
+    const params: { status?: string; search?: string; page: number; page_size: number } = {
+      page: pageToLoad,
+      page_size: 25,
+    };
     if (statusFilter) params.status = statusFilter;
-    if (searchQuery.trim()) params.search = searchQuery.trim();
+    if (debouncedSearch.trim()) params.search = debouncedSearch.trim();
     adminApi.getAdminOrders(params)
-      .then(setOrders)
+      .then((response) => {
+        setOrders(response.results);
+        setPage(response.page);
+        setTotalPages(response.total_pages);
+        setTotalCount(response.count);
+      })
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { fetchOrders(); }, [statusFilter]);
-
   useEffect(() => {
-    const t = setTimeout(fetchOrders, 400);
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setPage(1);
+    }, 400);
     return () => clearTimeout(t);
   }, [searchQuery]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchOrders(page);
+  }, [page, debouncedSearch, statusFilter]);
 
   const changeStatus = async (orderId: number, newStatus: string) => {
     try {
       await adminApi.updateOrderStatus(orderId, { status: newStatus });
       toast.success(`Статус изменён на "${STATUS_LABELS[newStatus]}"`);
       setOpenDropdown(null);
-      fetchOrders();
+      fetchOrders(page);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Ошибка смены статуса');
     }
@@ -355,6 +376,11 @@ export default function OrdersPage() {
             <option key={s} value={s}>{s ? STATUS_LABELS[s] : 'Все статусы'}</option>
           ))}
         </select>
+      </div>
+
+      <div className="flex items-center justify-between text-sm text-text-muted">
+        <span>Всего заказов: {totalCount}</span>
+        <span>Страница {page} из {totalPages}</span>
       </div>
 
       {/* Table */}
@@ -441,6 +467,25 @@ export default function OrdersPage() {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="flex items-center justify-between border-t border-border bg-bg-secondary px-4 py-3">
+          <button
+            onClick={() => setPage(current => Math.max(1, current - 1))}
+            disabled={page <= 1 || loading}
+            className="rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Назад
+          </button>
+          <div className="text-sm text-text-muted">
+            {totalCount === 0 ? 0 : (page - 1) * 25 + 1}-{Math.min(page * 25, totalCount)} из {totalCount}
+          </div>
+          <button
+            onClick={() => setPage(current => Math.min(totalPages, current + 1))}
+            disabled={page >= totalPages || loading}
+            className="rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Вперёд
+          </button>
         </div>
       </div>
 

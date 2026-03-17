@@ -15,6 +15,7 @@ import type {
   AdminPreset,
   AdminPresetItem,
   AdminHeroSlide,
+  AdminPaginatedResponse,
   TelegramChat,
   NotificationSettings,
 } from '../types/admin';
@@ -47,8 +48,10 @@ export const getAnalyticsReport = async (
 export const getAdminOrders = async (params?: {
   status?: string;
   search?: string;
-}): Promise<AdminOrder[]> => {
-  const response = await apiClient.get<AdminOrder[]>('/admin/orders/', { params });
+  page?: number;
+  page_size?: number;
+}): Promise<AdminPaginatedResponse<AdminOrder>> => {
+  const response = await apiClient.get<AdminPaginatedResponse<AdminOrder>>('/admin/orders/', { params });
   return response.data;
 };
 
@@ -69,8 +72,10 @@ export const getAdminProducts = async (params?: {
   search?: string;
   category?: number;
   category_slug?: string;
-}): Promise<AdminProduct[]> => {
-  const response = await apiClient.get<AdminProduct[]>('/admin/products/', { params });
+  page?: number;
+  page_size?: number;
+}): Promise<AdminPaginatedResponse<AdminProduct>> => {
+  const response = await apiClient.get<AdminPaginatedResponse<AdminProduct>>('/admin/products/', { params });
   return response.data;
 };
 

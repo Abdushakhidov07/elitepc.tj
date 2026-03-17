@@ -96,8 +96,9 @@ export default function PresetsPage() {
     const params: { search?: string; category_slug?: string } = {};
     if (pickerSearch.trim()) params.search = pickerSearch;
     if (slot) params.category_slug = slot.slug;
-    adminApi.getAdminProducts(params)
-      .then(setPickerProducts)
+    const pagingParams = { ...params, page: 1, page_size: 20 };
+    adminApi.getAdminProducts(pagingParams)
+      .then(response => setPickerProducts(response.results))
       .finally(() => setPickerLoading(false));
   };
 

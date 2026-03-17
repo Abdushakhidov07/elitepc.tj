@@ -159,9 +159,13 @@ class AdminCategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'slug']
 
     def get_children_count(self, obj):
+        if hasattr(obj, 'children_count'):
+            return obj.children_count
         return obj.get_children().count()
 
     def get_products_count(self, obj):
+        if hasattr(obj, 'products_count'):
+            return obj.products_count
         return obj.products.count()
 
 
@@ -279,6 +283,8 @@ class AdminPresetSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'total_price', 'created_at']
 
     def get_items_count(self, obj):
+        if hasattr(obj, 'items_count'):
+            return obj.items_count
         return obj.items.count()
 
 

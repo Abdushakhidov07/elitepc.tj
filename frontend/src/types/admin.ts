@@ -96,6 +96,16 @@ export interface LowStockProduct {
   stock_quantity: number;
 }
 
+export interface AdminPaginatedResponse<T> {
+  count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  next: number | null;
+  previous: number | null;
+  results: T[];
+}
+
 export interface AdminOrder {
   id: number;
   order_number: string;
